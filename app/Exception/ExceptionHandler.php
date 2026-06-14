@@ -1,6 +1,6 @@
 <?php 
 
-namespace Bootstrap;
+namespace App\Exception;
 
 use App\Http\Responses\ApiResponse;
 
@@ -61,7 +61,7 @@ final class ExceptionHandler{
     public function handleNotFoundException(ModelNotFoundException|NotFoundHttpException $e,
         Request $request):JsonResponse{
         $this->logException($e,"Resource not found");
-        $message = $e instanceof MethodNotAllowedHttpException ? "The request resource was not found" : "The request endpoint ". $request->getRequestUri()." was not found.";
+        $message = $e instanceof ModelNotFoundException ? "The request resource was not found" : "The request endpoint ". $request->getRequestUri()." was not found.";
         return ApiResponse::error($message,404,[
             "type"=>$this->getExceptionType($e),
             
@@ -109,7 +109,9 @@ public function handleQueryException(QueryException $e, Request $request): JsonR
     }
 }
 private function logException(Throwable $e,string $message,array $context=[]){
-    $logContext=array_merge([
+   // added try catch incase logging failed the correct response would still go to the client    
+try {
+       $logContext=array_merge([
         "exception"=> get_class($e),
         "message" => $e->getMessage(),
         'file'=>$e->getFile(),
@@ -119,6 +121,10 @@ private function logException(Throwable $e,string $message,array $context=[]){
         "ip"=>request()->ip() 
     ],$context);
     Log::debug($message,$logContext);
+    } catch (Exception $th) {
+        return null; 
+    }
+    
 }
     }
 
